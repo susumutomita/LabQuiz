@@ -1,15 +1,31 @@
-// google.script.run type declaration
+import {
+  mockGetCurrentUser,
+  mockGetCategories,
+  mockGetQuizzes,
+  mockAnswerQuiz,
+  mockCompleteSession,
+  mockGetPendingQuizzes,
+  mockReviewQuiz,
+  mockGetDashboardProgress,
+  mockGetUsers,
+  mockUpdateUserRole,
+} from "./mock";
+
+// ===== Environment detection =====
+
 declare const google: {
   script: {
-    run: GoogleScriptRun;
+    run: {
+      withSuccessHandler(fn: (data: string) => void): typeof google.script.run;
+      withFailureHandler(fn: (error: Error) => void): typeof google.script.run;
+      apiCall(action: string, params: string): void;
+    };
   };
 };
 
-interface GoogleScriptRun {
-  withSuccessHandler(fn: (data: string) => void): GoogleScriptRun;
-  withFailureHandler(fn: (error: Error) => void): GoogleScriptRun;
-  apiCall(action: string, params: string): void;
-}
+const isGas = typeof google !== "undefined" && !!google?.script?.run;
+
+// ===== GAS API call =====
 
 function callGas<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -19,7 +35,7 @@ function callGas<T>(action: string, params: Record<string, unknown> = {}): Promi
         if (parsed.success) {
           resolve(parsed.data as T);
         } else {
-          reject(new Error(parsed.error || 'エラーが発生しました'));
+          reject(new Error(parsed.error || "エラーが発生しました"));
         }
       })
       .withFailureHandler((error: Error) => {
@@ -29,51 +45,56 @@ function callGas<T>(action: string, params: Record<string, unknown> = {}): Promi
   });
 }
 
+// ===== Public API (auto-switches between GAS and mock) =====
+
 // Auth
-export const getCurrentUser = () =>
-  callGas<User>('getCurrentUser');
+export const getCurrentUser = (): Promise<User> =>
+  isGas ? callGas("getCurrentUser") : mockGetCurrentUser();
 
 // Categories
-export const getCategories = () =>
-  callGas<Category[]>('getCategories');
+export const getCategories = (): Promise<Category[]> =>
+  isGas ? callGas("getCategories") : mockGetCategories();
 
 // Quizzes
 export const getQuizzes = (categoryId: string, count = 10) =>
-  callGas<{ sessionId: string; quizzes: Quiz[]; message?: string }>(
-    'getQuizzes', { categoryId, count }
-  );
+  isGas
+    ? callGas<{ sessionId: string; quizzes: Quiz[]; message?: string }>("getQuizzes", { categoryId, count })
+    : mockGetQuizzes(categoryId, count);
 
 export const answerQuiz = (quizId: string, choiceId: string, sessionId: string) =>
-  callGas<{ isCorrect: boolean; correctChoiceId: string; explanation: string }>(
-    'answerQuiz', { quizId, choiceId, sessionId }
-  );
+  isGas
+    ? callGas<{ isCorrect: boolean; correctChoiceId: string; explanation: string }>("answerQuiz", { quizId, choiceId, sessionId })
+    : mockAnswerQuiz(quizId, choiceId, sessionId);
 
 export const completeSession = (sessionId: string) =>
-  callGas<SessionResult>('completeSession', { sessionId });
+  isGas
+    ? callGas<SessionResult>("completeSession", { sessionId })
+    : mockCompleteSession(sessionId);
 
 // Review
-export const getPendingQuizzes = () =>
-  callGas<PendingQuiz[]>('getPendingQuizzes');
+export const getPendingQuizzes = (): Promise<PendingQuiz[]> =>
+  isGas ? callGas("getPendingQuizzes") : mockGetPendingQuizzes();
 
-export const reviewQuiz = (
-  quizId: string,
-  action: "approve" | "reject",
-  _updatedAt: string,
-) =>
-  callGas<{ success: boolean }>('reviewQuiz', { quizId, action });
+export const reviewQuiz = (quizId: string, action: "approve" | "reject", _updatedAt: string) =>
+  isGas
+    ? callGas<{ success: boolean }>("reviewQuiz", { quizId, action })
+    : mockReviewQuiz(quizId, action);
 
 // Dashboard
-export const getDashboardProgress = () =>
-  callGas<UserProgress[]>('getDashboardProgress');
+export const getDashboardProgress = (): Promise<UserProgress[]> =>
+  isGas ? callGas("getDashboardProgress") : mockGetDashboardProgress();
 
 // Users
-export const getUsers = () =>
-  callGas<User[]>('getUsers');
+export const getUsers = (): Promise<User[]> =>
+  isGas ? callGas("getUsers") : mockGetUsers();
 
 export const updateUserRole = (email: string, role: string) =>
-  callGas<User>('updateUserRole', { email, role });
+  isGas
+    ? callGas<User>("updateUserRole", { email, role })
+    : mockUpdateUserRole(email, role);
 
-// Types
+// ===== Types =====
+
 export interface User {
   email: string;
   name: string;

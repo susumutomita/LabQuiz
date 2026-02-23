@@ -60,7 +60,7 @@ users.put("/:id/role", requireRole("admin"), async (c) => {
   const { role } = body;
 
   // 自分自身のロール変更は禁止
-  if (user.userId === targetId) {
+  if (String(user.userId) === targetId) {
     return c.json({ error: "自分自身のロールは変更できません" }, 400);
   }
 

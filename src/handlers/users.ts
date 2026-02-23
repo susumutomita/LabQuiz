@@ -18,6 +18,10 @@ export function handleUpdateUserRole(params: { email: string; role: string }): U
   const user = getCurrentUser();
   requireRole(user, 'admin');
 
+  if (!params.email || !params.role) {
+    throw new Error('email and role are required');
+  }
+
   const validRoles = ['learner', 'creator', 'reviewer', 'admin'];
   if (!validRoles.includes(params.role)) {
     throw new Error('Invalid role');
@@ -29,7 +33,8 @@ export function handleUpdateUserRole(params: { email: string; role: string }): U
   updateCell('users', rowIndex, 'role', params.role);
 
   const users = getSheetData('users');
-  const updated = users.find(u => u.email === params.email)!;
+  const updated = users.find(u => u.email === params.email);
+  if (!updated) throw new Error('User not found after update');
   return {
     email: updated.email,
     name: updated.name,

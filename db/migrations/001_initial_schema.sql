@@ -29,10 +29,22 @@ CREATE TABLE quizzes (
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_by UUID NOT NULL REFERENCES users(id),
   reviewed_by UUID REFERENCES users(id),
-  floor_plan_zone_id UUID,
+  floor_plan_zone_id UUID, -- references a zone id within floor_plans.zones JSONB array
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER quizzes_set_updated_at
+BEFORE UPDATE ON quizzes
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TABLE quiz_answers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

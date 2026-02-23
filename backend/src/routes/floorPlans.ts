@@ -10,12 +10,19 @@ const floorPlans = new Hono<AppEnv>();
 floorPlans.use("/*", authMiddleware());
 
 function getS3Client() {
+  const accessKeyId = process.env.S3_ACCESS_KEY;
+  const secretAccessKey = process.env.S3_SECRET_KEY;
+  if (!accessKeyId || !secretAccessKey) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("S3 credentials are not configured");
+    }
+  }
   return new S3Client({
     endpoint: process.env.S3_ENDPOINT || "http://localhost:9000",
     region: "us-east-1",
     credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY || "minioadmin",
-      secretAccessKey: process.env.S3_SECRET_KEY || "minioadmin",
+      accessKeyId: accessKeyId || "minioadmin",
+      secretAccessKey: secretAccessKey || "minioadmin",
     },
     forcePathStyle: true,
   });
@@ -29,6 +36,11 @@ floorPlans.post("/", requireRole("admin"), async (c) => {
 
   if (!file) {
     return c.json({ error: "画像ファイルをアップロードしてください" }, 400);
+  }
+
+  const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+  if (!allowedTypes.includes(file.type)) {
+    return c.json({ error: "PNG, JPEG, GIF, WebP画像のみアップロード可能です" }, 400);
   }
 
   if (file.size > 10 * 1024 * 1024) {

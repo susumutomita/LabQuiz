@@ -3,7 +3,7 @@ import pg from "pg";
 const pool = new pg.Pool({
   connectionString:
     process.env.DATABASE_URL ||
-    "postgresql://labquiz:labquiz_dev@localhost:5432/labquiz",
+    "postgresql://labquiz:labquiz_dev@localhost:5435/labquiz",
 });
 
 export default pool;

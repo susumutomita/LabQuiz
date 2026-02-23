@@ -7,7 +7,12 @@ const auth = new Hono();
 
 // POST /api/auth/login
 auth.post("/login", async (c) => {
-  const body = await c.req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "リクエストボディが不正です" }, 400);
+  }
   const { email, password } = body;
 
   if (!email || !password) {

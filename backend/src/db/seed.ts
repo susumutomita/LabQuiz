@@ -3,7 +3,10 @@ import pool from "./pool.js";
 
 async function seed() {
   const adminEmail = process.env.ADMIN_EMAIL || "admin@labquiz.local";
-  const adminPassword = process.env.ADMIN_PASSWORD || "changeme";
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    throw new Error("ADMIN_PASSWORD environment variable is required");
+  }
   const client = await pool.connect();
   try {
     const hash = await bcrypt.hash(adminPassword, 10);
@@ -16,7 +19,10 @@ async function seed() {
       [adminEmail, hash, "管理者", "admin"]
     );
 
-    console.log(`Seed completed. Admin user: ${adminEmail}`);
+    console.log("Seed completed. Admin user created.");
+  } catch (err) {
+    console.error("Seed failed:", err);
+    process.exitCode = 1;
   } finally {
     client.release();
     await pool.end();

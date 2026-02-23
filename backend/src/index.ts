@@ -12,7 +12,7 @@ import floorPlans from "./routes/floorPlans.js";
 const app = new Hono();
 
 app.use("/*", cors({
-  origin: ["http://localhost:5173", "http://localhost:3000"],
+  origin: ["http://localhost:5173", "http://localhost:5175", "http://localhost:3004"],
   credentials: true,
 }));
 
@@ -28,7 +28,7 @@ app.route("/api/dashboard", dashboard);
 app.route("/api/quizzes/generate", generate);
 app.route("/api/floor-plans", floorPlans);
 
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "3004", 10);
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`LabQuiz backend running on http://localhost:${port}`);

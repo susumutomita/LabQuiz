@@ -37,7 +37,10 @@ export const authMiddleware = () =>
 export const requireRole = (...roles: string[]) =>
   createMiddleware<AppEnv>(async (c, next) => {
     const user = c.get("user");
-    if (!user || !roles.includes(user.role)) {
+    if (!user) {
+      return c.json({ error: "認証が必要です" }, 401);
+    }
+    if (!roles.includes(user.role)) {
       return c.json({ error: "権限がありません" }, 403);
     }
     await next();

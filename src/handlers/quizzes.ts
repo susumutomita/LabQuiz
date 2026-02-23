@@ -6,6 +6,10 @@ export function handleGetQuizzes(params: { categoryId: string; count?: number })
   quizzes: Quiz[];
   message?: string;
 } {
+  if (!params.categoryId) {
+    throw new Error('categoryId is required');
+  }
+
   getCurrentUser(); // ensure authenticated
 
   const allQuizzes = getSheetData('quizzes');
@@ -21,7 +25,7 @@ export function handleGetQuizzes(params: { categoryId: string; count?: number })
   const selected = shuffleArray(categoryQuizzes).slice(0, count);
   const sessionId = generateId();
 
-  const quizzes: Quiz[] = selected.map(q => {
+  const quizzes = selected.map(q => {
     const allChoices: Choice[] = [
       { id: 'a', text: q.choice_a },
       { id: 'b', text: q.choice_b },
@@ -29,18 +33,25 @@ export function handleGetQuizzes(params: { categoryId: string; count?: number })
       { id: 'd', text: q.choice_d },
     ].filter(c => c.text);
 
-    // Pick correct answer + 1 random wrong answer, then shuffle
-    const correct = allChoices.find(c => c.id === q.correct)!;
+    const correct = allChoices.find(c => c.id === q.correct);
+    if (!correct) {
+      return null;
+    }
+
     const wrong = shuffleArray(allChoices.filter(c => c.id !== q.correct));
-    const twoChoices = shuffleArray([correct, wrong[0]]);
+    if (wrong.length === 0) {
+      return null;
+    }
+
+    const choices = shuffleArray(allChoices);
 
     return {
       id: q.id,
       categoryId: q.category_id,
       question: q.question,
-      choices: twoChoices,
+      choices,
     };
-  });
+  }).filter((q): q is Quiz => q !== null);
 
   return { sessionId, quizzes };
 }
@@ -50,6 +61,15 @@ export function handleAnswerQuiz(params: { quizId: string; choiceId: string; ses
   correctChoiceId: string;
   explanation: string;
 } {
+  if (!params.quizId || !params.choiceId || !params.sessionId) {
+    throw new Error('quizId, choiceId, and sessionId are required');
+  }
+
+  const validChoiceIds = ['a', 'b', 'c', 'd'];
+  if (!validChoiceIds.includes(params.choiceId)) {
+    throw new Error('Invalid choiceId');
+  }
+
   const user = getCurrentUser();
 
   const quiz = getSheetData('quizzes').find(q => q.id === params.quizId);
@@ -74,11 +94,19 @@ export function handleAnswerQuiz(params: { quizId: string; choiceId: string; ses
 }
 
 export function handleCompleteSession(params: { sessionId: string }): SessionResult {
+  if (!params.sessionId) {
+    throw new Error('sessionId is required');
+  }
+
   const user = getCurrentUser();
 
   const answers = getSheetData('quiz_answers').filter(
     a => a.session_id === params.sessionId && a.user_email === user.email
   );
+
+  if (answers.length === 0) {
+    throw new Error('No answers found for this session');
+  }
 
   const total = answers.length;
   const correct = answers.filter(a => a.is_correct === 'TRUE').length;

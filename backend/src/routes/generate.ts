@@ -106,16 +106,26 @@ generate.post("/", async (c) => {
       return c.json({ error: "問題を生成できませんでした。マニュアル内容を確認してください" }, 422);
     }
 
-    // DBに保存
+    // DBに保存（トランザクション）
+    const client = await pool.connect();
     const insertedQuizzes = [];
-    for (const q of quizData) {
-      const result = await pool.query(
-        `INSERT INTO quizzes (category_id, question, choices, correct_choice_id, explanation, status, created_by)
-         VALUES ($1, $2, $3, $4, $5, 'pending', $6)
-         RETURNING *`,
-        [categoryId, q.question, JSON.stringify(q.choices), q.correctChoiceId, q.explanation, user.userId]
-      );
-      insertedQuizzes.push(result.rows[0]);
+    try {
+      await client.query("BEGIN");
+      for (const q of quizData) {
+        const result = await client.query(
+          `INSERT INTO quizzes (category_id, question, choices, correct_choice_id, explanation, status, created_by)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+           RETURNING *`,
+          [categoryId, q.question, JSON.stringify(q.choices), q.correctChoiceId, q.explanation, user.userId]
+        );
+        insertedQuizzes.push(result.rows[0]);
+      }
+      await client.query("COMMIT");
+    } catch (insertErr) {
+      await client.query("ROLLBACK");
+      throw insertErr;
+    } finally {
+      client.release();
     }
 
     return c.json({

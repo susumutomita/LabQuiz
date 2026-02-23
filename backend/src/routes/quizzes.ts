@@ -52,9 +52,12 @@ quizzes.get("/", async (c) => {
   // 2択に絞る: 正解 + ランダム不正解1つ → シャッフル
   const quizzesForClient = result.rows.map((q) => {
     const allChoices = q.choices as Array<{ id: string; text: string }>;
-    const correct = allChoices.find((ch) => ch.id === q.correct_choice_id)!;
+    const correct = allChoices.find((ch) => ch.id === q.correct_choice_id);
     const wrongs = allChoices.filter((ch) => ch.id !== q.correct_choice_id);
-    const randomWrong = wrongs[Math.floor(Math.random() * wrongs.length)];
+    if (!correct || wrongs.length === 0) {
+      return null;
+    }
+    const randomWrong = wrongs[Math.floor(Math.random() * wrongs.length)]!;
     // シャッフル（50%の確率で順番入替）
     const twoChoices = Math.random() < 0.5 ? [correct, randomWrong] : [randomWrong, correct];
     return {
@@ -64,7 +67,7 @@ quizzes.get("/", async (c) => {
       choices: twoChoices,
       floorPlanZoneId: q.floor_plan_zone_id,
     };
-  });
+  }).filter(Boolean);
 
   return c.json({ sessionId, quizzes: quizzesForClient });
 });
@@ -99,6 +102,15 @@ quizzes.post("/:quizId/answer", async (c) => {
   }
 
   const isCorrect = choiceId === quiz.correct_choice_id;
+
+  // 重複回答チェック
+  const existing = await pool.query(
+    "SELECT 1 FROM quiz_answers WHERE user_id = $1 AND quiz_id = $2 AND session_id = $3",
+    [user.userId, quizId, sessionId]
+  );
+  if (existing.rows.length > 0) {
+    return c.json({ error: "この問題には既に回答済みです" }, 409);
+  }
 
   // 回答を保存
   await pool.query(
@@ -142,17 +154,13 @@ quizzes.post("/sessions/:sessionId/complete", async (c) => {
 
   // 満点の場合、バッジを付与
   if (isPerfect) {
-    const existing = await pool.query(
-      "SELECT id FROM badges WHERE user_id = $1 AND category_id = $2",
+    const insertResult = await pool.query(
+      `INSERT INTO badges (user_id, category_id) VALUES ($1, $2)
+       ON CONFLICT (user_id, category_id) DO NOTHING
+       RETURNING id`,
       [user.userId, categoryId]
     );
-    if (existing.rows.length === 0) {
-      await pool.query(
-        "INSERT INTO badges (user_id, category_id) VALUES ($1, $2)",
-        [user.userId, categoryId]
-      );
-      badgeEarned = true;
-    }
+    badgeEarned = insertResult.rows.length > 0;
   }
 
   return c.json({

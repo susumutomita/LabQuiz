@@ -12,11 +12,19 @@ DECLARE
   cat_houkoku UUID;
 BEGIN
   SELECT id INTO admin_id FROM users WHERE role='admin' LIMIT 1;
+  IF admin_id IS NULL THEN
+    RAISE EXCEPTION 'No admin user found. Run backend seed first.';
+  END IF;
+
   SELECT id INTO cat_saibou FROM categories WHERE name='細胞培養基本';
   SELECT id INTO cat_zoning FROM categories WHERE name='ゾーニング';
   SELECT id INTO cat_shiyaku FROM categories WHERE name='試薬安全管理';
   SELECT id INTO cat_rule FROM categories WHERE name='ラボルール';
   SELECT id INTO cat_houkoku FROM categories WHERE name='報告ルート';
+
+  IF cat_saibou IS NULL OR cat_zoning IS NULL OR cat_shiyaku IS NULL OR cat_rule IS NULL OR cat_houkoku IS NULL THEN
+    RAISE EXCEPTION 'One or more categories not found. Run 001_initial_schema.sql first.';
+  END IF;
 
   -- ===== 細胞培養基本 =====
   INSERT INTO quizzes (category_id, question, choices, correct_choice_id, explanation, status, created_by, reviewed_by) VALUES

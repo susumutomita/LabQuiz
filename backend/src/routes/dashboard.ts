@@ -100,12 +100,29 @@ dashboard.get("/export", async (c) => {
     ORDER BY u.name, c.name
   `);
 
+  function escapeCsvField(value: string | number): string {
+    const str = String(value);
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  }
+
   const header = "氏名,メール,カテゴリ,回答数,正答数,正答率(%),受験回数,最終受験日\n";
   const rows = result.rows.map((r) => {
     const total = parseInt(r.total_answers);
     const correct = parseInt(r.correct_answers);
     const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-    return `${r.user_name},${r.email},${r.category_name},${total},${correct},${accuracy},${r.session_count},${r.last_answered_at || "未受験"}`;
+    return [
+      escapeCsvField(r.user_name),
+      escapeCsvField(r.email),
+      escapeCsvField(r.category_name),
+      total,
+      correct,
+      accuracy,
+      r.session_count,
+      escapeCsvField(r.last_answered_at || "未受験"),
+    ].join(",");
   });
 
   const csv = header + rows.join("\n");

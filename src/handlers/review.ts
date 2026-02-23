@@ -31,6 +31,15 @@ export function handleGetPendingQuizzes(): PendingQuiz[] {
 }
 
 export function handleReviewQuiz(params: { quizId: string; action: 'approve' | 'reject' }): { success: boolean } {
+  if (!params.quizId) {
+    throw new Error('quizId is required');
+  }
+
+  const validActions = ['approve', 'reject'];
+  if (!validActions.includes(params.action)) {
+    throw new Error('action must be "approve" or "reject"');
+  }
+
   const user = getCurrentUser();
   requireRole(user, 'reviewer', 'admin');
 

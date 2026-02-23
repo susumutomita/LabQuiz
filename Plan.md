@@ -210,4 +210,4 @@ CREATE TABLE badges (
 - Check off tasks as you complete them
 - Add notes about decisions and blockers in this section
 - ポート: DB=5435, Backend=3004, Frontend=5175（既存プロジェクトとの競合回避）
-- 管理者アカウント: .env で設定（デフォルト seed は db/seed_quizzes.sql 参照）
+- 管理者アカウント: ADMIN_EMAIL / ADMIN_PASSWORD 環境変数で設定

@@ -40,7 +40,7 @@ export default function Layout() {
                           : "text-lab-muted hover:text-lab-text hover:bg-white/5"
                       }`}
                     >
-                      <span className="mr-1">{item.icon}</span>
+                      <span className="mr-1" aria-hidden="true">{item.icon}</span>
                       {item.label}
                     </Link>
                   ))}

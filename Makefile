@@ -3,7 +3,7 @@ ifneq ("$(wildcard $(ENV_FILE))","")
     include $(ENV_FILE)
 endif
 
-.PHONY: install build build-server build-frontend deploy generate-clasp clean
+.PHONY: install build build-server build-frontend deploy generate-clasp clean start
 
 install:
 	npm install
@@ -29,6 +29,9 @@ generate-clasp:
 deploy: build generate-clasp
 	npx clasp push
 	npx clasp version "Deploy: $$(date +'%Y%m%d-%H%M%S')"
+
+start:
+	cd frontend && npm run dev
 
 clean:
 	@echo "Cleaning dist/"
