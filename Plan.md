@@ -198,9 +198,16 @@ CREATE TABLE badges (
 | Date | What was done | Status |
 |------|---------------|--------|
 | — | Project initialized with DeepForm | Done |
+| 2026-02-22 | Docker Compose + DB migration + seed 実装 | Done |
+| 2026-02-22 | Backend API 全エンドポイント実装（auth, quizzes, users, dashboard, generate, floorPlans） | Done |
+| 2026-02-22 | Frontend 全画面実装（Login, Quiz, Review, Dashboard） | Done |
+| 2026-02-22 | 全画面の動作確認完了（ブラウザテスト） | Done |
+| 2026-02-23 | GAS Web App 化: サーバー側 (src/) 全実装、フロントエンド GAS 対応、ビルド設定変更 | Done |
 
 ## Notes
 
 - Follow AGENT.md for development rules and conventions
 - Check off tasks as you complete them
 - Add notes about decisions and blockers in this section
+- ポート: DB=5435, Backend=3004, Frontend=5175（既存プロジェクトとの競合回避）
+- 管理者アカウント: .env で設定（デフォルト seed は db/seed_quizzes.sql 参照）
