@@ -9,6 +9,11 @@ import {
   mockGetDashboardProgress,
   mockGetUsers,
   mockUpdateUserRole,
+  mockGetScenarios,
+  mockJudgeScenario,
+  mockCompleteScenarioSession,
+  mockGetPendingScenarios,
+  mockReviewScenario,
 } from "./mock";
 
 // ===== Environment detection =====
@@ -71,6 +76,22 @@ export const completeSession = (sessionId: string) =>
     ? callGas<SessionResult>("completeSession", { sessionId })
     : mockCompleteSession(sessionId);
 
+// Scenarios (Lab Checkpoint)
+export const getScenarios = (categoryId: string, count = 10) =>
+  isGas
+    ? callGas<{ sessionId: string; scenarios: Scenario[]; message?: string }>("getScenarios", { categoryId, count })
+    : mockGetScenarios(categoryId, count);
+
+export const judgeScenario = (scenarioId: string, judgment: "pass" | "violate", sessionId: string) =>
+  isGas
+    ? callGas<JudgmentResult>("judgeScenario", { scenarioId, judgment, sessionId })
+    : mockJudgeScenario(scenarioId, judgment, sessionId);
+
+export const completeScenarioSession = (sessionId: string) =>
+  isGas
+    ? callGas<SessionResult>("completeScenarioSession", { sessionId })
+    : mockCompleteScenarioSession(sessionId);
+
 // Review
 export const getPendingQuizzes = (): Promise<PendingQuiz[]> =>
   isGas ? callGas("getPendingQuizzes") : mockGetPendingQuizzes();
@@ -79,6 +100,14 @@ export const reviewQuiz = (quizId: string, action: "approve" | "reject", _update
   isGas
     ? callGas<{ success: boolean }>("reviewQuiz", { quizId, action })
     : mockReviewQuiz(quizId, action);
+
+export const getPendingScenarios = (): Promise<PendingScenario[]> =>
+  isGas ? callGas("getPendingScenarios") : mockGetPendingScenarios();
+
+export const reviewScenario = (scenarioId: string, action: "approve" | "reject") =>
+  isGas
+    ? callGas<{ success: boolean }>("reviewScenario", { scenarioId, action })
+    : mockReviewScenario(scenarioId, action);
 
 // Dashboard
 export const getDashboardProgress = (): Promise<UserProgress[]> =>
@@ -160,4 +189,37 @@ export interface UserProgress {
   name: string;
   email: string;
   categories: CategoryProgress[];
+}
+
+export interface Scenario {
+  id: string;
+  categoryId: string;
+  charName: string;
+  charRole: string;
+  charAvatar: string;
+  situation: string;
+  dialogue: string;
+  reference: string;
+  isViolation: boolean;
+}
+
+export interface JudgmentResult {
+  isCorrect: boolean;
+  wasViolation: boolean;
+  explanation: string;
+}
+
+export interface PendingScenario {
+  id: string;
+  category_id: string;
+  category_name: string;
+  char_name: string;
+  char_role: string;
+  char_avatar: string;
+  situation: string;
+  dialogue: string;
+  reference: string;
+  is_violation: boolean;
+  explanation: string;
+  status: string;
 }

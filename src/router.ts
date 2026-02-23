@@ -1,8 +1,9 @@
 import { getCurrentUser } from './auth';
 import { handleGetCategories } from './handlers/categories';
 import { handleGetQuizzes, handleAnswerQuiz, handleCompleteSession } from './handlers/quizzes';
+import { handleGetScenarios, handleJudgeScenario, handleCompleteScenarioSession } from './handlers/scenarios';
 import { handleGetDashboardProgress } from './handlers/dashboard';
-import { handleGetPendingQuizzes, handleReviewQuiz } from './handlers/review';
+import { handleGetPendingQuizzes, handleGetPendingScenarios, handleReviewQuiz, handleReviewScenario } from './handlers/review';
 import { handleGetUsers, handleUpdateUserRole } from './handlers/users';
 
 export function apiCall(action: string, params: string): string {
@@ -25,6 +26,21 @@ export function apiCall(action: string, params: string): string {
         break;
       case 'completeSession':
         result = handleCompleteSession(p);
+        break;
+      case 'getScenarios':
+        result = handleGetScenarios(p);
+        break;
+      case 'judgeScenario':
+        result = handleJudgeScenario(p);
+        break;
+      case 'completeScenarioSession':
+        result = handleCompleteScenarioSession(p);
+        break;
+      case 'getPendingScenarios':
+        result = handleGetPendingScenarios();
+        break;
+      case 'reviewScenario':
+        result = handleReviewScenario(p);
         break;
       case 'getDashboardProgress':
         result = handleGetDashboardProgress();
