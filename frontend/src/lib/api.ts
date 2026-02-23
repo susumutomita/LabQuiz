@@ -1,19 +1,11 @@
 import {
-  mockGetCurrentUser,
   mockGetCategories,
   mockGetQuizzes,
   mockAnswerQuiz,
   mockCompleteSession,
-  mockGetPendingQuizzes,
-  mockReviewQuiz,
-  mockGetDashboardProgress,
-  mockGetUsers,
-  mockUpdateUserRole,
   mockGetScenarios,
   mockJudgeScenario,
   mockCompleteScenarioSession,
-  mockGetPendingScenarios,
-  mockReviewScenario,
 } from "./mock";
 
 // ===== Environment detection =====
@@ -52,10 +44,6 @@ function callGas<T>(action: string, params: Record<string, unknown> = {}): Promi
 
 // ===== Public API (auto-switches between GAS and mock) =====
 
-// Auth
-export const getCurrentUser = (): Promise<User> =>
-  isGas ? callGas("getCurrentUser") : mockGetCurrentUser();
-
 // Categories
 export const getCategories = (): Promise<Category[]> =>
   isGas ? callGas("getCategories") : mockGetCategories();
@@ -77,9 +65,9 @@ export const completeSession = (sessionId: string) =>
     : mockCompleteSession(sessionId);
 
 // Scenarios (Lab Checkpoint)
-export const getScenarios = (categoryId: string, count = 10) =>
+export const getScenarios = (categoryId?: string, count = 10) =>
   isGas
-    ? callGas<{ sessionId: string; scenarios: Scenario[]; message?: string }>("getScenarios", { categoryId, count })
+    ? callGas<{ sessionId: string; scenarios: Scenario[]; message?: string }>("getScenarios", { ...(categoryId ? { categoryId } : {}), count })
     : mockGetScenarios(categoryId, count);
 
 export const judgeScenario = (scenarioId: string, judgment: "pass" | "violate", sessionId: string) =>
@@ -92,44 +80,7 @@ export const completeScenarioSession = (sessionId: string) =>
     ? callGas<SessionResult>("completeScenarioSession", { sessionId })
     : mockCompleteScenarioSession(sessionId);
 
-// Review
-export const getPendingQuizzes = (): Promise<PendingQuiz[]> =>
-  isGas ? callGas("getPendingQuizzes") : mockGetPendingQuizzes();
-
-export const reviewQuiz = (quizId: string, action: "approve" | "reject", _updatedAt: string) =>
-  isGas
-    ? callGas<{ success: boolean }>("reviewQuiz", { quizId, action })
-    : mockReviewQuiz(quizId, action);
-
-export const getPendingScenarios = (): Promise<PendingScenario[]> =>
-  isGas ? callGas("getPendingScenarios") : mockGetPendingScenarios();
-
-export const reviewScenario = (scenarioId: string, action: "approve" | "reject") =>
-  isGas
-    ? callGas<{ success: boolean }>("reviewScenario", { scenarioId, action })
-    : mockReviewScenario(scenarioId, action);
-
-// Dashboard
-export const getDashboardProgress = (): Promise<UserProgress[]> =>
-  isGas ? callGas("getDashboardProgress") : mockGetDashboardProgress();
-
-// Users
-export const getUsers = (): Promise<User[]> =>
-  isGas ? callGas("getUsers") : mockGetUsers();
-
-export const updateUserRole = (email: string, role: string) =>
-  isGas
-    ? callGas<User>("updateUserRole", { email, role })
-    : mockUpdateUserRole(email, role);
-
 // ===== Types =====
-
-export interface User {
-  email: string;
-  name: string;
-  role: "learner" | "creator" | "reviewer" | "admin";
-  created_at?: string;
-}
 
 export interface Category {
   id: string;
@@ -149,20 +100,6 @@ export interface Quiz {
   choices: Choice[];
 }
 
-export interface PendingQuiz {
-  id: string;
-  category_id: string;
-  category_name: string;
-  creator_name: string;
-  question: string;
-  choices: Choice[];
-  correct_choice_id: string;
-  explanation: string;
-  status: string;
-  updated_at: string;
-  created_at: string;
-}
-
 export interface SessionResult {
   sessionId: string;
   total: number;
@@ -170,25 +107,6 @@ export interface SessionResult {
   score: number;
   isPerfect: boolean;
   badgeEarned: boolean;
-}
-
-export interface CategoryProgress {
-  categoryId: string;
-  categoryName: string;
-  totalAnswers: number;
-  correctAnswers: number;
-  accuracy: number;
-  sessionCount: number;
-  lastAnsweredAt: string | null;
-  hasBadge: boolean;
-  isWarning: boolean;
-}
-
-export interface UserProgress {
-  userId: string;
-  name: string;
-  email: string;
-  categories: CategoryProgress[];
 }
 
 export interface Scenario {
@@ -207,19 +125,4 @@ export interface JudgmentResult {
   isCorrect: boolean;
   wasViolation: boolean;
   explanation: string;
-}
-
-export interface PendingScenario {
-  id: string;
-  category_id: string;
-  category_name: string;
-  char_name: string;
-  char_role: string;
-  char_avatar: string;
-  situation: string;
-  dialogue: string;
-  reference: string;
-  is_violation: boolean;
-  explanation: string;
-  status: string;
 }

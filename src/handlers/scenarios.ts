@@ -1,28 +1,26 @@
 import { getSheetData, appendRow, generateId, shuffleArray } from '../sheets';
 import { getCurrentUser } from '../auth';
 
-export function handleGetScenarios(params: { categoryId: string; count?: number }): {
+export function handleGetScenarios(params: { categoryId?: string; count?: number }): {
   sessionId: string;
   scenarios: Scenario[];
   message?: string;
 } {
-  if (!params.categoryId) {
-    throw new Error('categoryId is required');
-  }
-
   getCurrentUser(); // ensure authenticated
 
   const allScenarios = getSheetData('scenarios');
-  const categoryScenarios = allScenarios.filter(
-    (s: Record<string, string>) => s.category_id === params.categoryId && s.status === 'approved'
-  );
+  const filtered = params.categoryId
+    ? allScenarios.filter(
+        (s: Record<string, string>) => s.category_id === params.categoryId && s.status === 'approved'
+      )
+    : allScenarios.filter((s: Record<string, string>) => s.status === 'approved');
 
-  if (categoryScenarios.length === 0) {
-    return { sessionId: '', scenarios: [], message: 'このカテゴリにはまだシナリオがありません' };
+  if (filtered.length === 0) {
+    return { sessionId: '', scenarios: [], message: params.categoryId ? 'このカテゴリにはまだシナリオがありません' : 'シナリオがありません' };
   }
 
-  const count = Math.min(params.count || 10, categoryScenarios.length);
-  const selected = shuffleArray(categoryScenarios).slice(0, count);
+  const count = Math.min(params.count || 10, filtered.length);
+  const selected = shuffleArray(filtered).slice(0, count);
   const sessionId = generateId();
 
   const scenarios: Scenario[] = selected.map((s: Record<string, string>) => ({
