@@ -1,4 +1,4 @@
-import type { User, Category, Quiz, Choice, PendingQuiz, SessionResult, UserProgress, CategoryProgress, Scenario, JudgmentResult, PendingScenario } from "./api";
+import type { Category, Quiz, Choice, SessionResult, Scenario, JudgmentResult } from "./api";
 
 // ===== In-memory data store =====
 
@@ -80,20 +80,6 @@ const quizzes: QuizData[] = [
     choice_c: "水で洗い流す", choice_d: "周囲の人に知らせる",
     correct: "d", explanation: "まず周囲の安全確保が最優先です。その後SDS確認→適切な処理→報告の手順を踏みます。",
   },
-  {
-    id: "q-9", category_id: "cat-3", status: "pending",
-    question: "GHS分類で「髑髏マーク」が示す危険性は？",
-    choice_a: "環境有害", choice_b: "急性毒性（高い）",
-    choice_c: "引火性", choice_d: "酸化性",
-    correct: "b", explanation: "髑髏と骨のマークは急性毒性が高いことを示します。",
-  },
-  {
-    id: "q-10", category_id: "cat-5", status: "pending",
-    question: "バイオハザードレベル2の微生物が漏洩した場合の最初の対応は？",
-    choice_a: "全員退避", choice_b: "消毒液で処理",
-    choice_c: "換気をする", choice_d: "防護具を着用する",
-    correct: "d", explanation: "BSL2漏洩時は防護具（手袋・マスク・ゴーグル）を着用してから処理を行います。",
-  },
 ];
 
 // ===== Scenario data (Lab Checkpoint) =====
@@ -113,7 +99,7 @@ interface ScenarioData {
 }
 
 const scenarios: ScenarioData[] = [
-  // cat-1: 細胞培養基本 (3 scenarios)
+  // cat-1: 細胞培養基本
   {
     id: "sc-001", category_id: "cat-1", status: "approved",
     char_name: "田中", char_role: "新人研究員", char_avatar: "👩‍🔬",
@@ -141,8 +127,7 @@ const scenarios: ScenarioData[] = [
     is_violation: true,
     explanation: "トリプシンの長時間処理は細胞にダメージを与えます。3-5分を目安に顕微鏡で確認し、速やかに培地（血清入り）でトリプシンを不活化してください。",
   },
-
-  // cat-2: ゾーニング (3 scenarios)
+  // cat-2: ゾーニング
   {
     id: "sc-004", category_id: "cat-2", status: "approved",
     char_name: "佐藤", char_role: "外部委託作業員", char_avatar: "👷",
@@ -170,8 +155,7 @@ const scenarios: ScenarioData[] = [
     is_violation: true,
     explanation: "携帯電話は微粒子やコンタミの発生源になります。消毒しても完全には除去できません。緊急連絡はクリーンルーム外で対応してください。",
   },
-
-  // cat-3: 試薬安全管理 (3 scenarios)
+  // cat-3: 試薬安全管理
   {
     id: "sc-007", category_id: "cat-3", status: "approved",
     char_name: "山田", char_role: "学部4年", char_avatar: "👨‍🎓",
@@ -199,8 +183,7 @@ const scenarios: ScenarioData[] = [
     is_violation: true,
     explanation: "酸と塩基の混合は発熱反応や有害ガスの発生を引き起こす可能性があります。必ず分別して廃棄してください。タンクが不足している場合は管理者に報告を。",
   },
-
-  // cat-4: ラボルール (3 scenarios)
+  // cat-4: ラボルール
   {
     id: "sc-010", category_id: "cat-4", status: "approved",
     char_name: "加藤", char_role: "技術補佐員", char_avatar: "👩‍💼",
@@ -228,8 +211,7 @@ const scenarios: ScenarioData[] = [
     is_violation: true,
     explanation: "実験室内での飲食は、試薬の経口摂取リスクや実験へのコンタミリスクがあります。どんな状況でも実験室内での飲食は禁止です。",
   },
-
-  // cat-5: 報告ルート (3 scenarios)
+  // cat-5: 報告ルート
   {
     id: "sc-013", category_id: "cat-5", status: "approved",
     char_name: "井上", char_role: "研究員", char_avatar: "👩‍🔬",
@@ -257,26 +239,6 @@ const scenarios: ScenarioData[] = [
     is_violation: false,
     explanation: "正しい対応です。防護具着用→消毒処理→報告の手順を適切に実行しています。",
   },
-
-  // Pending scenarios for review testing
-  {
-    id: "sc-016", category_id: "cat-1", status: "pending",
-    char_name: "西村", char_role: "新人研究員", char_avatar: "🧑‍🔬",
-    situation: "場所: クリーンベンチ / 作業: 培地調製 / 備考: ベンチのUV照射中に作業開始",
-    dialogue: "UV照射が終わるまで待つと時間がもったいないので、照射中に作業を始めちゃいます。",
-    reference: "UV照射中はクリーンベンチ内での作業を行わないこと。UV光は皮膚・目に有害。照射完了後に作業開始。",
-    is_violation: true,
-    explanation: "UV照射中の作業はUV光による皮膚や目の障害リスクがあります。照射完了を待ってから作業を開始してください。",
-  },
-  {
-    id: "sc-017", category_id: "cat-3", status: "pending",
-    char_name: "吉田", char_role: "修士1年", char_avatar: "👨‍🔬",
-    situation: "場所: 試薬庫 / 行動: 期限切れの試薬を使用 / 理由: もったいないから",
-    dialogue: "期限が2ヶ月前に切れてますけど、見た目は変わらないし大丈夫でしょう。",
-    reference: "使用期限切れの試薬は使用禁止。実験結果の信頼性に関わるため、期限管理を徹底すること。",
-    is_violation: true,
-    explanation: "期限切れ試薬の使用は実験結果の信頼性を損ないます。見た目で判断せず、期限管理を徹底してください。",
-  },
 ];
 
 interface AnswerRecord {
@@ -294,17 +256,8 @@ interface BadgeRecord {
   earned_at: string;
 }
 
-const users: User[] = [
-  { email: "admin@example.com", name: "管理者", role: "admin", created_at: "2026-01-01T00:00:00Z" },
-  { email: "reviewer@example.com", name: "監査官", role: "reviewer", created_at: "2026-01-15T00:00:00Z" },
-  { email: "user@example.com", name: "新人研究員", role: "learner", created_at: "2026-02-01T00:00:00Z" },
-];
-
 const answers: AnswerRecord[] = [];
 const badges: BadgeRecord[] = [];
-
-// Current mock user (admin by default for full UI access)
-let currentUser: User = users[0];
 
 // ===== Helpers =====
 
@@ -326,14 +279,6 @@ function delay<T>(data: T, ms = 200): Promise<T> {
 }
 
 // ===== Mock API handlers =====
-
-export function setMockUser(user: User) {
-  currentUser = user;
-}
-
-export function mockGetCurrentUser(): Promise<User> {
-  return delay(currentUser);
-}
 
 export function mockGetCategories(): Promise<Category[]> {
   return delay([...categories]);
@@ -370,7 +315,7 @@ export function mockAnswerQuiz(quizId: string, choiceId: string, sessionId: stri
   if (!quiz) return Promise.reject(new Error("Quiz not found"));
   const isCorrect = quiz.correct === choiceId;
   answers.push({
-    user_email: currentUser.email,
+    user_email: "anonymous@local",
     quiz_id: quizId,
     session_id: sessionId,
     choice: choiceId,
@@ -381,104 +326,22 @@ export function mockAnswerQuiz(quizId: string, choiceId: string, sessionId: stri
 }
 
 export function mockCompleteSession(sessionId: string): Promise<SessionResult> {
-  const sessionAnswers = answers.filter(a => a.session_id === sessionId && a.user_email === currentUser.email);
+  const sessionAnswers = answers.filter(a => a.session_id === sessionId);
   const total = sessionAnswers.length;
   const correct = sessionAnswers.filter(a => a.is_correct).length;
   const score = total > 0 ? Math.round((correct / total) * 100) : 0;
   const isPerfect = total > 0 && correct === total;
-
-  let badgeEarned = false;
-  if (isPerfect && sessionAnswers.length > 0) {
-    const quiz = quizzes.find(q => q.id === sessionAnswers[0].quiz_id);
-    if (quiz) {
-      const hasBadge = badges.some(b => b.user_email === currentUser.email && b.category_id === quiz.category_id);
-      if (!hasBadge) {
-        badges.push({ user_email: currentUser.email, category_id: quiz.category_id, earned_at: new Date().toISOString() });
-        badgeEarned = true;
-      }
-    }
-  }
-  return delay({ sessionId, total, correct, score, isPerfect, badgeEarned });
-}
-
-export function mockGetPendingQuizzes(): Promise<PendingQuiz[]> {
-  const pending = quizzes.filter(q => q.status === "pending");
-  const catMap: Record<string, string> = {};
-  categories.forEach(c => { catMap[c.id] = c.name; });
-  return delay(pending.map(q => ({
-    id: q.id,
-    category_id: q.category_id,
-    category_name: catMap[q.category_id] || "",
-    creator_name: "Spreadsheet",
-    question: q.question,
-    choices: [
-      { id: "a", text: q.choice_a },
-      { id: "b", text: q.choice_b },
-      { id: "c", text: q.choice_c },
-      { id: "d", text: q.choice_d },
-    ].filter(c => c.text),
-    correct_choice_id: q.correct,
-    explanation: q.explanation,
-    status: q.status,
-    updated_at: "",
-    created_at: "",
-  })));
-}
-
-export function mockReviewQuiz(quizId: string, action: "approve" | "reject"): Promise<{ success: boolean }> {
-  const quiz = quizzes.find(q => q.id === quizId);
-  if (!quiz) return Promise.reject(new Error("Quiz not found"));
-  quiz.status = action === "approve" ? "approved" : "rejected";
-  return delay({ success: true });
-}
-
-export function mockGetDashboardProgress(): Promise<UserProgress[]> {
-  const quizCategoryMap: Record<string, string> = {};
-  quizzes.forEach(q => { quizCategoryMap[q.id] = q.category_id; });
-
-  return delay(users.map(u => {
-    const userAnswers = answers.filter(a => a.user_email === u.email);
-    const catProgress: CategoryProgress[] = categories.map(cat => {
-      const catAnswers = userAnswers.filter(a => quizCategoryMap[a.quiz_id] === cat.id);
-      const totalAnswers = catAnswers.length;
-      const correctAnswers = catAnswers.filter(a => a.is_correct).length;
-      const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
-      const sessions = new Set(catAnswers.map(a => a.session_id));
-      const sorted = [...catAnswers].sort((a, b) => b.answered_at.localeCompare(a.answered_at));
-      const hasBadge = badges.some(b => b.user_email === u.email && b.category_id === cat.id);
-      return {
-        categoryId: cat.id,
-        categoryName: cat.name,
-        totalAnswers,
-        correctAnswers,
-        accuracy,
-        sessionCount: sessions.size,
-        lastAnsweredAt: sorted[0]?.answered_at ?? null,
-        hasBadge,
-        isWarning: totalAnswers > 0 && accuracy < 70,
-      };
-    });
-    return { userId: u.email, name: u.name, email: u.email, categories: catProgress };
-  }));
-}
-
-export function mockGetUsers(): Promise<User[]> {
-  return delay([...users]);
-}
-
-export function mockUpdateUserRole(email: string, role: string): Promise<User> {
-  const user = users.find(u => u.email === email);
-  if (!user) return Promise.reject(new Error("User not found"));
-  user.role = role as User["role"];
-  return delay({ ...user });
+  return delay({ sessionId, total, correct, score, isPerfect, badgeEarned: false });
 }
 
 // ===== Scenario mock handlers =====
 
-export function mockGetScenarios(categoryId: string, count = 10): Promise<{ sessionId: string; scenarios: Scenario[]; message?: string }> {
-  const approved = scenarios.filter(s => s.category_id === categoryId && s.status === "approved");
+export function mockGetScenarios(categoryId?: string, count = 10): Promise<{ sessionId: string; scenarios: Scenario[]; message?: string }> {
+  const approved = categoryId
+    ? scenarios.filter(s => s.category_id === categoryId && s.status === "approved")
+    : scenarios.filter(s => s.status === "approved");
   if (approved.length === 0) {
-    return delay({ sessionId: "", scenarios: [], message: "このカテゴリにはまだシナリオがありません" });
+    return delay({ sessionId: "", scenarios: [], message: categoryId ? "このカテゴリにはまだシナリオがありません" : "シナリオがありません" });
   }
   const selected = shuffleArray(approved).slice(0, Math.min(count, approved.length));
   const sessionId = uuid();
@@ -502,7 +365,7 @@ export function mockJudgeScenario(scenarioId: string, judgment: "pass" | "violat
   const playerChoseViolate = judgment === "violate";
   const isCorrect = playerChoseViolate === scenario.is_violation;
   answers.push({
-    user_email: currentUser.email,
+    user_email: "anonymous@local",
     quiz_id: scenarioId,
     session_id: sessionId,
     choice: judgment,
@@ -513,7 +376,7 @@ export function mockJudgeScenario(scenarioId: string, judgment: "pass" | "violat
 }
 
 export function mockCompleteScenarioSession(sessionId: string): Promise<SessionResult> {
-  const sessionAnswers = answers.filter(a => a.session_id === sessionId && a.user_email === currentUser.email);
+  const sessionAnswers = answers.filter(a => a.session_id === sessionId);
   const total = sessionAnswers.length;
   const correct = sessionAnswers.filter(a => a.is_correct).length;
   const score = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -523,39 +386,12 @@ export function mockCompleteScenarioSession(sessionId: string): Promise<SessionR
   if (isPerfect && sessionAnswers.length > 0) {
     const scenario = scenarios.find(s => s.id === sessionAnswers[0].quiz_id);
     if (scenario) {
-      const hasBadge = badges.some(b => b.user_email === currentUser.email && b.category_id === scenario.category_id);
+      const hasBadge = badges.some(b => b.user_email === "anonymous@local" && b.category_id === scenario.category_id);
       if (!hasBadge) {
-        badges.push({ user_email: currentUser.email, category_id: scenario.category_id, earned_at: new Date().toISOString() });
+        badges.push({ user_email: "anonymous@local", category_id: scenario.category_id, earned_at: new Date().toISOString() });
         badgeEarned = true;
       }
     }
   }
   return delay({ sessionId, total, correct, score, isPerfect, badgeEarned });
-}
-
-export function mockGetPendingScenarios(): Promise<PendingScenario[]> {
-  const pending = scenarios.filter(s => s.status === "pending");
-  const catMap: Record<string, string> = {};
-  categories.forEach(c => { catMap[c.id] = c.name; });
-  return delay(pending.map(s => ({
-    id: s.id,
-    category_id: s.category_id,
-    category_name: catMap[s.category_id] || "",
-    char_name: s.char_name,
-    char_role: s.char_role,
-    char_avatar: s.char_avatar,
-    situation: s.situation,
-    dialogue: s.dialogue,
-    reference: s.reference,
-    is_violation: s.is_violation,
-    explanation: s.explanation,
-    status: s.status,
-  })));
-}
-
-export function mockReviewScenario(scenarioId: string, action: "approve" | "reject"): Promise<{ success: boolean }> {
-  const scenario = scenarios.find(s => s.id === scenarioId);
-  if (!scenario) return Promise.reject(new Error("Scenario not found"));
-  scenario.status = action === "approve" ? "approved" : "rejected";
-  return delay({ success: true });
 }

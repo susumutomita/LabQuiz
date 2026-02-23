@@ -1,10 +1,6 @@
-import { getCurrentUser } from './auth';
 import { handleGetCategories } from './handlers/categories';
 import { handleGetQuizzes, handleAnswerQuiz, handleCompleteSession } from './handlers/quizzes';
 import { handleGetScenarios, handleJudgeScenario, handleCompleteScenarioSession } from './handlers/scenarios';
-import { handleGetDashboardProgress } from './handlers/dashboard';
-import { handleGetPendingQuizzes, handleGetPendingScenarios, handleReviewQuiz, handleReviewScenario } from './handlers/review';
-import { handleGetUsers, handleUpdateUserRole } from './handlers/users';
 
 export function apiCall(action: string, params: string): string {
   try {
@@ -12,9 +8,6 @@ export function apiCall(action: string, params: string): string {
     let result: unknown;
 
     switch (action) {
-      case 'getCurrentUser':
-        result = getCurrentUser();
-        break;
       case 'getCategories':
         result = handleGetCategories();
         break;
@@ -35,27 +28,6 @@ export function apiCall(action: string, params: string): string {
         break;
       case 'completeScenarioSession':
         result = handleCompleteScenarioSession(p);
-        break;
-      case 'getPendingScenarios':
-        result = handleGetPendingScenarios();
-        break;
-      case 'reviewScenario':
-        result = handleReviewScenario(p);
-        break;
-      case 'getDashboardProgress':
-        result = handleGetDashboardProgress();
-        break;
-      case 'getPendingQuizzes':
-        result = handleGetPendingQuizzes();
-        break;
-      case 'reviewQuiz':
-        result = handleReviewQuiz(p);
-        break;
-      case 'getUsers':
-        result = handleGetUsers();
-        break;
-      case 'updateUserRole':
-        result = handleUpdateUserRole(p);
         break;
       default:
         throw new Error(`Unknown action: ${action}`);

@@ -41,6 +41,10 @@ body {
   text-shadow: 0 0 10px rgba(34, 211, 238, 0.5), 0 0 40px rgba(34, 211, 238, 0.2);
 }
 
+.glow-amber {
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.2);
+}
+
 .card-lab {
   background: linear-gradient(135deg, rgba(17, 24, 39, 0.9), rgba(15, 23, 42, 0.95));
   border: 1px solid rgba(30, 58, 95, 0.6);
@@ -125,9 +129,9 @@ body {
   animation: char-arrested 0.4s ease-in forwards;
 }
 
-/* 防護服チーム登場 - 右からスライドイン */
+/* 防護服チーム登場 - 左からスライドイン */
 @keyframes hazmat-enter {
-  0%   { transform: translateX(100px); opacity: 0; }
+  0%   { transform: translateX(-100px); opacity: 0; }
   100% { transform: translateX(0); opacity: 1; }
 }
 .animate-hazmat-enter {
