@@ -109,3 +109,52 @@ interface PendingQuiz {
   updated_at: string;
   created_at: string;
 }
+
+// ===== Scenario Types (Lab Checkpoint) =====
+
+interface ScenarioRow {
+  id: string;
+  category_id: string;
+  char_name: string;
+  char_role: string;
+  char_avatar: string;
+  situation: string;
+  dialogue: string;
+  reference: string;
+  is_violation: string; // 'TRUE' | 'FALSE'
+  explanation: string;
+  status: string; // 'pending' | 'approved' | 'rejected'
+}
+
+interface Scenario {
+  id: string;
+  categoryId: string;
+  charName: string;
+  charRole: string;
+  charAvatar: string;
+  situation: string;
+  dialogue: string;
+  reference: string;
+  isViolation: boolean;
+}
+
+interface JudgmentResult {
+  isCorrect: boolean;
+  wasViolation: boolean;
+  explanation: string;
+}
+
+interface PendingScenario {
+  id: string;
+  category_id: string;
+  category_name: string;
+  char_name: string;
+  char_role: string;
+  char_avatar: string;
+  situation: string;
+  dialogue: string;
+  reference: string;
+  is_violation: boolean;
+  explanation: string;
+  status: string;
+}

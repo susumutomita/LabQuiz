@@ -51,3 +51,50 @@ export function handleReviewQuiz(params: { quizId: string; action: 'approve' | '
 
   return { success: true };
 }
+
+export function handleGetPendingScenarios(): PendingScenario[] {
+  const user = getCurrentUser();
+  requireRole(user, 'reviewer', 'admin');
+
+  const scenarios = getSheetData('scenarios').filter(s => s.status === 'pending');
+  const categories = getSheetData('categories');
+  const catMap: Record<string, string> = {};
+  categories.forEach(c => { catMap[c.id] = c.name; });
+
+  return scenarios.map(s => ({
+    id: s.id,
+    category_id: s.category_id,
+    category_name: catMap[s.category_id] || '',
+    char_name: s.char_name,
+    char_role: s.char_role,
+    char_avatar: s.char_avatar || '🧑‍🔬',
+    situation: s.situation,
+    dialogue: s.dialogue,
+    reference: s.reference,
+    is_violation: s.is_violation === 'TRUE',
+    explanation: s.explanation,
+    status: s.status,
+  }));
+}
+
+export function handleReviewScenario(params: { scenarioId: string; action: 'approve' | 'reject' }): { success: boolean } {
+  if (!params.scenarioId) {
+    throw new Error('scenarioId is required');
+  }
+
+  const validActions = ['approve', 'reject'];
+  if (!validActions.includes(params.action)) {
+    throw new Error('action must be "approve" or "reject"');
+  }
+
+  const user = getCurrentUser();
+  requireRole(user, 'reviewer', 'admin');
+
+  const rowIndex = findRowIndex('scenarios', 'id', params.scenarioId);
+  if (rowIndex === -1) throw new Error('Scenario not found');
+
+  const newStatus = params.action === 'approve' ? 'approved' : 'rejected';
+  updateCell('scenarios', rowIndex, 'status', newStatus);
+
+  return { success: true };
+}
