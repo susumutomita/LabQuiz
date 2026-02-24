@@ -1,6 +1,7 @@
 import { handleGetCategories } from './handlers/categories';
 import { handleGetQuizzes, handleAnswerQuiz, handleCompleteSession } from './handlers/quizzes';
 import { handleGetScenarios, handleJudgeScenario, handleCompleteScenarioSession } from './handlers/scenarios';
+import { handleSeedSpreadsheet } from './handlers/seed';
 
 export function apiCall(action: string, params: string): string {
   try {
@@ -28,6 +29,9 @@ export function apiCall(action: string, params: string): string {
         break;
       case 'completeScenarioSession':
         result = handleCompleteScenarioSession(p);
+        break;
+      case 'seedSpreadsheet':
+        result = handleSeedSpreadsheet();
         break;
       default:
         throw new Error(`Unknown action: ${action}`);
