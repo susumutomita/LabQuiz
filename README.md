@@ -83,15 +83,18 @@ Google Workspace SSO — `Session.getActiveUser()` による自動認証。ロ�
 npm install
 cd frontend && npm install && cd ..
 
-# 2. GAS プロジェクトの設定
+# 2. コンテンツの初期化（content.example/ → content/ にコピー）
+npm run setup
+
+# 3. GAS プロジェクトの設定
 #    .env に SCRIPT_ID を設定
 #    GAS Script Properties に SPREADSHEET_ID を設定
 
-# 3. ビルド
-npx esbuild src/index.ts --bundle --platform=neutral --outfile=dist/bundle.js --format=iife
-cd frontend && npx vite build && cd ..
+# 4. ビルド
+npm run build                        # GAS サーバー
+cd frontend && npx vite build && cd ..  # フロントエンド
 
-# 4. デプロイ
+# 5. デプロイ
 npx clasp push
 ```
 
@@ -102,6 +105,57 @@ cd frontend && npx vite dev
 ```
 
 GAS 環境外ではモックデータで動作します（`api.ts` が自動切替）。
+
+---
+
+## コンテンツのカスタマイズ
+
+`content/` ディレクトリの JSON ファイルを編集するだけで、自社独自の問題セットに差し替えられます。コアゲームエンジンの変更は不要です。
+
+```
+content/                  # gitignored — 各社がカスタマイズ
+├── categories.json       # カテゴリ定義
+└── scenarios.json        # シナリオデータ
+
+content.example/          # テンプレート（git 管理）
+├── categories.json
+└── scenarios.json
+```
+
+### 手順
+
+1. `npm run setup` で `content.example/` → `content/` にコピー（初回のみ）
+2. `content/categories.json` と `content/scenarios.json` を自社データに書き換え
+3. ローカル開発: `cd frontend && npx vite dev` でモックデータとして反映
+4. 本番: ビルド後 `npx clasp push` でデプロイ。GAS 管理画面から `seedSpreadsheet` を実行すると Spreadsheet にデータ投入
+
+### JSON フォーマット
+
+**categories.json**:
+```json
+[
+  { "id": "cat-1", "name": "カテゴリ名", "description": "説明文" }
+]
+```
+
+**scenarios.json**:
+```json
+[
+  {
+    "id": "sc-001",
+    "category_id": "cat-1",
+    "char_name": "名前",
+    "char_role": "役職",
+    "char_avatar": "絵文字",
+    "situation": "場所: ... / 作業: ...",
+    "dialogue": "セリフ",
+    "reference": "正しいルール",
+    "is_violation": true,
+    "explanation": "解説",
+    "status": "approved"
+  }
+]
+```
 
 ---
 

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "setup": "[ -d content ] || cp -r content.example content",
     "build": "node esbuild.config.js",
     "clasp:push": "clasp push",
     "clasp:version": "clasp version"
