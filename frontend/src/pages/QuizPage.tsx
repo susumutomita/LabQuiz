@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { getCategories, getScenarios, judgeScenario, type Category, type Scenario, type SessionResult, type JudgmentResult } from "../lib/api";
 import { sound } from "../lib/sound";
+import { saveAnswer, finalizeSession } from "../lib/history";
 
 type Phase = "select" | "inspect" | "feedback" | "arrest" | "result";
 
@@ -97,6 +99,7 @@ export default function QuizPage() {
 
     const scenario = scenarios[currentIndex];
     const result = judgeScenario(scenario.id, judgment, sessionId);
+    saveAnswer(sessionId, selectedCategory?.id ?? null, scenario.id, judgment, result.isCorrect);
 
     sound.play("stamp");
     setStampText(judgment === "pass" ? "PASSED" : "VIOLATION");
@@ -173,6 +176,8 @@ export default function QuizPage() {
     if (missCount >= MAX_MISS || currentIndex + 1 >= scenarios.length) {
       const answered = currentIndex + 1;
       const score = answered > 0 ? Math.round((correctCount / answered) * 100) : 0;
+      const rank = getRank(score);
+      finalizeSession(sessionId, score, rank);
       setSessionResult({
         sessionId,
         total: answered,
@@ -362,9 +367,14 @@ export default function QuizPage() {
             </div>
           </div>
 
-          <button onClick={resetQuiz} className="btn-primary mt-6">
-            トップに戻る
-          </button>
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <button onClick={resetQuiz} className="btn-primary w-full">
+              トップに戻る
+            </button>
+            <Link to="/history" className="text-sm text-lab-muted hover:text-lab-green transition-colors font-mono-lab">
+              回答履歴を見る &rarr;
+            </Link>
+          </div>
         </div>
       </div>
     );
