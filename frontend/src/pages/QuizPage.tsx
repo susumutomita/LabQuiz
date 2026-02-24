@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getCategories, getScenarios, judgeScenario, completeScenarioSession, type Category, type Scenario, type SessionResult, type JudgmentResult } from "../lib/api";
+import { getCategories, getScenarios, judgeScenario, type Category, type Scenario, type SessionResult, type JudgmentResult } from "../lib/api";
 import { sound } from "../lib/sound";
 
 type Phase = "select" | "inspect" | "feedback" | "arrest" | "result";
@@ -40,7 +40,6 @@ export default function QuizPage() {
   const [correctCount, setCorrectCount] = useState(0);
   const [missCount, setMissCount] = useState(0);
   const [sessionResult, setSessionResult] = useState<SessionResult | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
@@ -49,6 +48,7 @@ export default function QuizPage() {
   const [hazmatVisible, setHazmatVisible] = useState(false);
   const [hazmatAnim, setHazmatAnim] = useState<"enter" | "exit" | "">("");
   const [stampText, setStampText] = useState<"PASSED" | "VIOLATION" | "">("");
+  const [stampCorrect, setStampCorrect] = useState<boolean | null>(null);
   const [flashAnim, setFlashAnim] = useState<"red" | "green" | "">("");
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -68,132 +68,120 @@ export default function QuizPage() {
   }, []);
 
   useEffect(() => {
-    getCategories().then(setCategories).catch((e) => setError(e.message));
+    setCategories(getCategories());
     return clearTimers;
   }, [clearTimers]);
 
-  const startSession = async (cat?: Category) => {
-    setLoading(true);
+  const startSession = (cat?: Category) => {
     setError("");
-    try {
-      const data = await getScenarios(cat?.id);
-      if (data.scenarios.length === 0) {
-        setError(data.message || "シナリオがありません");
-        return;
-      }
-      setScenarios(data.scenarios);
-      setSessionId(data.sessionId);
-      setSelectedCategory(cat || null);
-      setCurrentIndex(0);
-      setCorrectCount(0);
-      setMissCount(0);
-      setPhase("inspect");
-      setCharAnim("enter");
-      sound.play("enter");
-      queueTimer(() => setCharAnim("idle"), 500);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "エラーが発生しました");
-    } finally {
-      setLoading(false);
+    const data = getScenarios(cat?.id);
+    if (data.scenarios.length === 0) {
+      setError(data.message || "シナリオがありません");
+      return;
     }
+    setScenarios(data.scenarios);
+    setSessionId(data.sessionId);
+    setSelectedCategory(cat || null);
+    setCurrentIndex(0);
+    setCorrectCount(0);
+    setMissCount(0);
+    setPhase("inspect");
+    setCharAnim("enter");
+    sound.play("enter");
+    queueTimer(() => setCharAnim("idle"), 500);
   };
 
-  const submitJudgment = async (judgment: "pass" | "violate") => {
+  const submitJudgment = (judgment: "pass" | "violate") => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-    setLoading(true);
 
-    try {
-      const scenario = scenarios[currentIndex];
-      const result = await judgeScenario(scenario.id, judgment, sessionId);
+    const scenario = scenarios[currentIndex];
+    const result = judgeScenario(scenario.id, judgment, sessionId);
 
-      sound.play("stamp");
-      setStampText(judgment === "pass" ? "PASSED" : "VIOLATION");
+    sound.play("stamp");
+    setStampText(judgment === "pass" ? "PASSED" : "VIOLATION");
+    setStampCorrect(result.isCorrect);
 
-      if (judgment === "violate") {
-        // 違反指摘 → 左へ連行（正解/不正解に関わらず）
-        setFlashAnim(result.isCorrect ? "green" : "red");
+    if (judgment === "violate") {
+      // 違反指摘 → 左へ連行（正解/不正解に関わらず）
+      setFlashAnim(result.isCorrect ? "green" : "red");
 
-        queueTimer(() => {
-          sound.play(result.isCorrect ? "correct" : "alarm");
-          setHazmatVisible(true);
-          setHazmatAnim("enter");
-        }, 400);
+      queueTimer(() => {
+        sound.play(result.isCorrect ? "correct" : "alarm");
+        setHazmatVisible(true);
+        setHazmatAnim("enter");
+      }, 400);
 
-        queueTimer(() => {
-          setCharAnim("arrested");
-          setHazmatAnim("exit");
-          if (!result.isCorrect) sound.play("wrong");
-        }, 900);
+      queueTimer(() => {
+        setCharAnim("arrested");
+        setHazmatAnim("exit");
+        if (!result.isCorrect) sound.play("wrong");
+      }, 900);
 
-        queueTimer(() => {
-          setHazmatVisible(false);
-          setHazmatAnim("");
-          if (result.isCorrect) {
-            setCorrectCount((c) => c + 1);
-          } else {
-            const newMissCount = missCount + 1;
-            setMissCount(newMissCount);
-            if (newMissCount >= MAX_MISS) {
-              sound.play("gameOver");
-              setFeedback(result);
-              setFlashAnim("");
-              setPhase("arrest");
-              return;
-            }
+      queueTimer(() => {
+        setHazmatVisible(false);
+        setHazmatAnim("");
+        if (result.isCorrect) {
+          setCorrectCount((c) => c + 1);
+        } else {
+          const newMissCount = missCount + 1;
+          setMissCount(newMissCount);
+          if (newMissCount >= MAX_MISS) {
+            sound.play("gameOver");
+            setFeedback(result);
+            setFlashAnim("");
+            setPhase("arrest");
+            return;
           }
-          setFeedback(result);
-          setFlashAnim("");
-          setPhase("feedback");
-        }, 1400);
-      } else {
-        // 通過許可 → 右へ通す（正解/不正解に関わらず）
-        setFlashAnim(result.isCorrect ? "green" : "red");
+        }
+        setFeedback(result);
+        setFlashAnim("");
+        setPhase("feedback");
+      }, 1400);
+    } else {
+      // 通過許可 → 右へ通す（正解/不正解に関わらず）
+      setFlashAnim(result.isCorrect ? "green" : "red");
 
-        queueTimer(() => {
-          sound.play(result.isCorrect ? "correct" : "wrong");
-          if (result.isCorrect) {
-            setCorrectCount((c) => c + 1);
-          } else {
-            const newMissCount = missCount + 1;
-            setMissCount(newMissCount);
-            if (newMissCount >= MAX_MISS) {
-              sound.play("gameOver");
-            }
+      queueTimer(() => {
+        sound.play(result.isCorrect ? "correct" : "wrong");
+        if (result.isCorrect) {
+          setCorrectCount((c) => c + 1);
+        } else {
+          const newMissCount = missCount + 1;
+          setMissCount(newMissCount);
+          if (newMissCount >= MAX_MISS) {
+            sound.play("gameOver");
           }
-          setCharAnim("exit-ok");
-        }, 400);
+        }
+        setCharAnim("exit-ok");
+      }, 400);
 
-        queueTimer(() => {
-          setFlashAnim("");
-          setFeedback(result);
-          setPhase(!result.isCorrect && missCount + 1 >= MAX_MISS ? "arrest" : "feedback");
-        }, 850);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "エラーが発生しました");
-      setIsTransitioning(false);
-    } finally {
-      setLoading(false);
+      queueTimer(() => {
+        setFlashAnim("");
+        setFeedback(result);
+        setPhase(!result.isCorrect && missCount + 1 >= MAX_MISS ? "arrest" : "feedback");
+      }, 850);
     }
   };
 
-  const nextScenario = async () => {
+  const nextScenario = () => {
     clearTimers();
     setStampText("");
+    setStampCorrect(null);
     setIsTransitioning(false);
 
     if (missCount >= MAX_MISS || currentIndex + 1 >= scenarios.length) {
-      setLoading(true);
-      try {
-        const result = await completeScenarioSession(sessionId);
-        setSessionResult(result);
-        setPhase("result");
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "エラーが発生しました");
-      } finally {
-        setLoading(false);
-      }
+      const answered = currentIndex + 1;
+      const score = answered > 0 ? Math.round((correctCount / answered) * 100) : 0;
+      setSessionResult({
+        sessionId,
+        total: answered,
+        correct: correctCount,
+        score,
+        isPerfect: answered > 0 && correctCount === answered,
+        badgeEarned: false,
+      });
+      setPhase("result");
       return;
     }
 
@@ -221,6 +209,7 @@ export default function QuizPage() {
     setHazmatVisible(false);
     setHazmatAnim("");
     setStampText("");
+    setStampCorrect(null);
     setFlashAnim("");
     setIsTransitioning(false);
   };
@@ -248,8 +237,7 @@ export default function QuizPage() {
           {/* Main random button */}
           <button
             onClick={() => startSession()}
-            disabled={loading}
-            className="w-full p-5 mb-6 card-lab border-lab-green/50 hover:border-lab-green hover:shadow-[0_0_20px_rgba(0,255,136,0.15)] transition-all group"
+                       className="w-full p-5 mb-6 card-lab border-lab-green/50 hover:border-lab-green hover:shadow-[0_0_20px_rgba(0,255,136,0.15)] transition-all group"
           >
             <div className="text-3xl mb-2">🧬</div>
             <div className="font-black text-xl text-lab-green group-hover:text-lab-green transition-colors">
@@ -266,8 +254,7 @@ export default function QuizPage() {
                 <button
                   key={cat.id}
                   onClick={() => startSession(cat)}
-                  disabled={loading}
-                  className="text-left p-3 card-lab hover:border-lab-green/40 hover:shadow-[0_0_10px_rgba(0,255,136,0.08)] transition-all group"
+                                   className="text-left p-3 card-lab hover:border-lab-green/40 hover:shadow-[0_0_10px_rgba(0,255,136,0.08)] transition-all group"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{CATEGORY_ICONS[cat.name] || "🔬"}</span>
@@ -318,8 +305,8 @@ export default function QuizPage() {
             </div>
           )}
 
-          <button onClick={nextScenario} disabled={loading} className="btn-danger">
-            {loading ? "処理中..." : "結果を見る"}
+          <button onClick={nextScenario} className="btn-danger">
+            結果を見る
           </button>
         </div>
       </div>
@@ -473,11 +460,11 @@ export default function QuizPage() {
             {stampText && (
               <div className="absolute top-6 right-6 animate-stamp z-10">
                 <div className={`px-4 py-2 rounded-lg border-4 font-mono-lab font-black text-lg transform -rotate-12 ${
-                  feedback?.isCorrect
+                  stampCorrect
                     ? "border-lab-green text-lab-green bg-lab-green/10"
                     : "border-lab-pink text-lab-pink bg-lab-pink/10"
                 }`}>
-                  {feedback?.isCorrect ? "CORRECT" : "WRONG"}
+                  {stampText}
                 </div>
               </div>
             )}
@@ -534,14 +521,14 @@ export default function QuizPage() {
           <div className="flex justify-center gap-6">
             <button
               onClick={() => submitJudgment("pass")}
-              disabled={loading || isTransitioning}
+              disabled={isTransitioning}
               className="btn-approve disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 px-10 py-3 text-base"
             >
               <span className="text-xl">✓</span> 通過許可
             </button>
             <button
               onClick={() => submitJudgment("violate")}
-              disabled={loading || isTransitioning}
+              disabled={isTransitioning}
               className="btn-danger disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 px-10 py-3 text-base"
             >
               <span className="text-xl">✗</span> 違反指摘
@@ -572,9 +559,8 @@ export default function QuizPage() {
               <p className="text-lab-text text-sm leading-relaxed">{feedback.explanation}</p>
             </div>
 
-            <button onClick={nextScenario} disabled={loading} className="btn-primary w-full py-3 text-base">
-              {loading ? "処理中..." :
-                currentIndex + 1 < scenarios.length ? "次のケースへ →" : "結果を見る"}
+            <button onClick={nextScenario} className="btn-primary w-full py-3 text-base">
+              {currentIndex + 1 < scenarios.length ? "次のケースへ →" : "結果を見る"}
             </button>
           </div>
         </div>
