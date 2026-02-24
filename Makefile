@@ -34,8 +34,27 @@ create: install build
 	@echo "Created. Add SCRIPT_ID to .env from .clasp.json"
 
 deploy: build generate-clasp
-	$(CLASP) push
-	$(CLASP) version "Deploy: $$(date +'%Y%m%d-%H%M%S')"
+	@if $(CLASP) push 2>/dev/null; then \
+		$(CLASP) version "Deploy: $$(date +'%Y%m%d-%H%M%S')"; \
+		echo ""; \
+		echo "=== Deploy complete ==="; \
+	else \
+		echo ""; \
+		echo "============================================"; \
+		echo "  clasp push に失敗しました"; \
+		echo "  以下の手順で手動デプロイしてください"; \
+		echo "============================================"; \
+		echo ""; \
+		echo "1. GAS エディタを開く:"; \
+		echo "   https://script.google.com/d/$(SCRIPT_ID)/edit"; \
+		echo ""; \
+		echo "2. ファイルの中身を差し替える:"; \
+		echo "   bundle.gs  ← dist/bundle.js の内容をコピペ"; \
+		echo "   index.html ← dist/index.html の内容をコピペ"; \
+		echo ""; \
+		echo "3. デプロイ → デプロイを管理 → 新しいバージョンを作成"; \
+		echo "============================================"; \
+	fi
 
 start:
 	cd frontend && npm run dev
