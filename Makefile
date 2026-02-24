@@ -3,7 +3,9 @@ ifneq ("$(wildcard $(ENV_FILE))","")
     include $(ENV_FILE)
 endif
 
-.PHONY: install build build-server build-frontend deploy generate-clasp clean start
+CLASP := ./node_modules/.bin/clasp
+
+.PHONY: install build build-server build-frontend deploy generate-clasp create clean start
 
 install:
 	npm install
@@ -26,9 +28,14 @@ generate-clasp:
 	@echo "Generating .clasp.json with SCRIPT_ID = $(SCRIPT_ID)"
 	@echo '{"scriptId":"$(SCRIPT_ID)","rootDir":"dist"}' > .clasp.json
 
+create: install build
+	@test ! -f .clasp.json || (echo ".clasp.json already exists. Delete it first to recreate." && exit 1)
+	$(CLASP) create --type webapp --title "LAB CHECKPOINT" --rootDir dist
+	@echo "Created. Add SCRIPT_ID to .env from .clasp.json"
+
 deploy: build generate-clasp
-	npx clasp push
-	npx clasp version "Deploy: $$(date +'%Y%m%d-%H%M%S')"
+	$(CLASP) push
+	$(CLASP) version "Deploy: $$(date +'%Y%m%d-%H%M%S')"
 
 start:
 	cd frontend && npm run dev
