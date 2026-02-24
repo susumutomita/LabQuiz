@@ -108,29 +108,14 @@ export default function QuizPage() {
       const result = await judgeScenario(scenario.id, judgment, sessionId);
 
       sound.play("stamp");
+      setStampText(judgment === "pass" ? "PASSED" : "VIOLATION");
 
-      if (result.isCorrect) {
-        setStampText(judgment === "pass" ? "PASSED" : "VIOLATION");
-        setFlashAnim("green");
-        queueTimer(() => {
-          sound.play("correct");
-          setCorrectCount((c) => c + 1);
-          // Character exits to the right (passed)
-          setCharAnim("exit-ok");
-        }, 400);
-        queueTimer(() => {
-          setFlashAnim("");
-          setFeedback(result);
-          setPhase("feedback");
-        }, 850);
-      } else {
-        setStampText(judgment === "pass" ? "PASSED" : "VIOLATION");
-        setFlashAnim("red");
-        const newMissCount = missCount + 1;
-        setMissCount(newMissCount);
+      if (judgment === "violate") {
+        // 違反指摘 → 左へ連行（正解/不正解に関わらず）
+        setFlashAnim(result.isCorrect ? "green" : "red");
 
         queueTimer(() => {
-          sound.play("alarm");
+          sound.play(result.isCorrect ? "correct" : "alarm");
           setHazmatVisible(true);
           setHazmatAnim("enter");
         }, 400);
@@ -138,19 +123,52 @@ export default function QuizPage() {
         queueTimer(() => {
           setCharAnim("arrested");
           setHazmatAnim("exit");
-          sound.play("wrong");
+          if (!result.isCorrect) sound.play("wrong");
         }, 900);
 
         queueTimer(() => {
           setHazmatVisible(false);
           setHazmatAnim("");
-          setFeedback(result);
-          setPhase(newMissCount >= MAX_MISS ? "arrest" : "feedback");
-          setFlashAnim("");
-          if (newMissCount >= MAX_MISS) {
-            sound.play("gameOver");
+          if (result.isCorrect) {
+            setCorrectCount((c) => c + 1);
+          } else {
+            const newMissCount = missCount + 1;
+            setMissCount(newMissCount);
+            if (newMissCount >= MAX_MISS) {
+              sound.play("gameOver");
+              setFeedback(result);
+              setFlashAnim("");
+              setPhase("arrest");
+              return;
+            }
           }
+          setFeedback(result);
+          setFlashAnim("");
+          setPhase("feedback");
         }, 1400);
+      } else {
+        // 通過許可 → 右へ通す（正解/不正解に関わらず）
+        setFlashAnim(result.isCorrect ? "green" : "red");
+
+        queueTimer(() => {
+          sound.play(result.isCorrect ? "correct" : "wrong");
+          if (result.isCorrect) {
+            setCorrectCount((c) => c + 1);
+          } else {
+            const newMissCount = missCount + 1;
+            setMissCount(newMissCount);
+            if (newMissCount >= MAX_MISS) {
+              sound.play("gameOver");
+            }
+          }
+          setCharAnim("exit-ok");
+        }, 400);
+
+        queueTimer(() => {
+          setFlashAnim("");
+          setFeedback(result);
+          setPhase(!result.isCorrect && missCount + 1 >= MAX_MISS ? "arrest" : "feedback");
+        }, 850);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "エラーが発生しました");
